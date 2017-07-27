@@ -1,12 +1,17 @@
 package com.eagleview.ljr.testcamera;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -35,13 +40,30 @@ public class MainActivity extends Activity {
 
         //layout = this.findViewById(R.id.buttonLayout);
 
-        SurfaceView surfaceView = (SurfaceView) this
-                .findViewById(R.id.surfaceView);
-        surfaceView.getHolder()
-                .setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-        surfaceView.getHolder().setFixedSize(1280, 720); //设置Surface分辨率
-        //surfaceView.getHolder().setKeepScreenOn(true);// 屏幕常亮
-        surfaceView.getHolder().addCallback(new SurfaceCallback());//为SurfaceView的句柄添加一个回调函数
+        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA)
+                == PackageManager.PERMISSION_GRANTED) {
+            Log.i(TAG,"CAMERA Granted");
+            //init(barcodeScannerView, getIntent(), null);
+
+            SurfaceView surfaceView = (SurfaceView) this
+                    .findViewById(R.id.surfaceView);
+            surfaceView.getHolder()
+                    .setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+            surfaceView.getHolder().setFixedSize(1280, 720); //设置Surface分辨率
+            //surfaceView.getHolder().setKeepScreenOn(true);// 屏幕常亮
+            surfaceView.getHolder().addCallback(new SurfaceCallback());//为SurfaceView的句柄添加一个回调函数
+        } else {
+            ActivityCompat.requestPermissions(MainActivity.this,
+                    new String[]{Manifest.permission.CAMERA}, 1);//1 can be another integer
+        }
+
+        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED) {
+            Log.i(TAG,"WRITE_EXTERNAL_STORAGE Granted");
+        } else {
+            ActivityCompat.requestPermissions(MainActivity.this,
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 2);//1 can be another integer
+        }
     }
 
 
@@ -51,15 +73,15 @@ public class MainActivity extends Activity {
         @Override
         public void surfaceChanged(SurfaceHolder holder, int format, int width,
                                    int height) {
-            //Log.d(TAG, "SurfaceHolder width:" + width + " height:" + height);
+            Log.d(TAG, "SurfaceHolder width:" + width + " height:" + height);
             Camera.Parameters parameters = null;
             parameters = mCamera.getParameters(); // 获取各项参数
             parameters.setPictureFormat(PixelFormat.JPEG); // 设置图片格式
             parameters.setPreviewSize(width, height); // 设置预览大小
-            parameters.setPreviewFrameRate(5);  //设置每秒显示4帧
+//            parameters.setPreviewFrameRate(5);  //设置每秒显示4帧,华为mate9会闪退
             parameters.setPictureSize(width, height); // 设置保存的图片尺寸
             parameters.setJpegQuality(100); // 设置照片质量
-            parameters.setFocusMode(parameters.FOCUS_MODE_CONTINUOUS_PICTURE);    //设置自动连续对焦，API14
+            parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);    //设置自动连续对焦，API14
             parameters.setRotation(90); //设置相机旋转
             mCamera.setParameters(parameters);
 
