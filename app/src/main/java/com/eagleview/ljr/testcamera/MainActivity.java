@@ -1,12 +1,12 @@
 package com.eagleview.ljr.testcamera;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.PixelFormat;
 import android.hardware.Camera;
-import android.hardware.Camera.Size;
-import android.os.Environment;
+import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
+import android.os.Environment;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -18,13 +18,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 
 public class MainActivity extends Activity {
     private static String TAG = "TestCamera";
     private View layout;
     private Camera mCamera;
-    private Camera.Parameters parameters = null;
     boolean Debug = true;
 
     Bundle bundle = null; // 声明一个Bundle对象，用来存储数据
@@ -54,13 +52,14 @@ public class MainActivity extends Activity {
         public void surfaceChanged(SurfaceHolder holder, int format, int width,
                                    int height) {
             //Log.d(TAG, "SurfaceHolder width:" + width + " height:" + height);
+            Camera.Parameters parameters = null;
             parameters = mCamera.getParameters(); // 获取各项参数
             parameters.setPictureFormat(PixelFormat.JPEG); // 设置图片格式
             parameters.setPreviewSize(width, height); // 设置预览大小
             parameters.setPreviewFrameRate(5);  //设置每秒显示4帧
             parameters.setPictureSize(width, height); // 设置保存的图片尺寸
             parameters.setJpegQuality(100); // 设置照片质量
-            parameters.setFocusMode(parameters.FOCUS_MODE_CONTINUOUS_PICTURE);    //设置自动连续对焦
+            parameters.setFocusMode(parameters.FOCUS_MODE_CONTINUOUS_PICTURE);    //设置自动连续对焦，API14
             parameters.setRotation(90); //设置相机旋转
             mCamera.setParameters(parameters);
 
@@ -173,10 +172,13 @@ public class MainActivity extends Activity {
             try {
                 bundle = new Bundle();
                 bundle.putByteArray("bytes", data); //将图片字节数据保存在bundle当中，实现数据交换
-                saveToSDCard(data); // 保存图片到sd卡中
+                File file = saveToSDCard(data); // 保存图片到sd卡中
                 Toast.makeText(getApplicationContext(), R.string.success,
                         Toast.LENGTH_SHORT).show();
                 camera.startPreview(); // 拍完照后，重新开始预览
+
+                //通知多媒体库扫描图片
+                sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(file)));
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -189,18 +191,20 @@ public class MainActivity extends Activity {
      * @param data
      * @throws IOException
      */
-    public static void saveToSDCard(byte[] data) throws IOException {
+    public static File saveToSDCard(byte[] data) throws IOException {
         Date date = new Date();
         SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmss"); // 格式化时间
         String filename = format.format(date) + ".jpg";
         File fileFolder = new File(Environment.getExternalStorageDirectory()
                 + "/_TestCamera/");
-        if (!fileFolder.exists()) { // 如果目录不存在，则创建一个名为"finger"的目录
+        if (!fileFolder.exists()) { // 如果目录不存在，则创建一个名为"XXX"的目录
             fileFolder.mkdir();
         }
         File jpgFile = new File(fileFolder, filename);
         FileOutputStream outputStream = new FileOutputStream(jpgFile); // 文件输出流
         outputStream.write(data); // 写入sd卡中
         outputStream.close(); // 关闭输出流
+
+        return jpgFile;
     }
 }
