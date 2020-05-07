@@ -23,12 +23,15 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 public class MainActivity extends Activity {
     private static String TAG = "TestCamera";
     private View layout;
     private Camera mCamera;
     boolean Debug = true;
+    private int width = 1280;
+    private int height = 720;
 
     Bundle bundle = null; // 声明一个Bundle对象，用来存储数据
 
@@ -42,14 +45,14 @@ public class MainActivity extends Activity {
 
         if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA)
                 == PackageManager.PERMISSION_GRANTED) {
-            Log.i(TAG,"CAMERA Granted");
+            Log.i(TAG, "CAMERA Granted");
             //init(barcodeScannerView, getIntent(), null);
 
             SurfaceView surfaceView = (SurfaceView) this
                     .findViewById(R.id.surfaceView);
             surfaceView.getHolder()
                     .setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-            surfaceView.getHolder().setFixedSize(1280, 720); //设置Surface分辨率
+            surfaceView.getHolder().setFixedSize(width, height); //设置Surface分辨率。Mate9 720P或以下闪退，拍照是3968  2976。
             //surfaceView.getHolder().setKeepScreenOn(true);// 屏幕常亮
             surfaceView.getHolder().addCallback(new SurfaceCallback());//为SurfaceView的句柄添加一个回调函数
         } else {
@@ -59,7 +62,7 @@ public class MainActivity extends Activity {
 
         if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 == PackageManager.PERMISSION_GRANTED) {
-            Log.i(TAG,"WRITE_EXTERNAL_STORAGE Granted");
+            Log.i(TAG, "WRITE_EXTERNAL_STORAGE Granted");
         } else {
             ActivityCompat.requestPermissions(MainActivity.this,
                     new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 2);//1 can be another integer
@@ -74,31 +77,7 @@ public class MainActivity extends Activity {
         public void surfaceChanged(SurfaceHolder holder, int format, int width,
                                    int height) {
             Log.d(TAG, "SurfaceHolder width:" + width + " height:" + height);
-            Camera.Parameters parameters = null;
-            parameters = mCamera.getParameters(); // 获取各项参数
-            parameters.setPictureFormat(PixelFormat.JPEG); // 设置图片格式
-            parameters.setPreviewSize(width, height); // 设置预览大小
-//            parameters.setPreviewFrameRate(5);  //设置每秒显示4帧,华为mate9会闪退
-            parameters.setPictureSize(width, height); // 设置保存的图片尺寸
-            parameters.setJpegQuality(100); // 设置照片质量
-            parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);    //设置自动连续对焦，API14
-            parameters.setRotation(90); //设置相机旋转
-            mCamera.setParameters(parameters);
 
-//            List<Size> mSupportedPreviewSizes;
-//            mSupportedPreviewSizes = parameters.getSupportedPreviewSizes();
-//            if (Debug)
-//                Log.d(TAG, "supported preview size : ");
-//            for (int i = 0; i < mSupportedPreviewSizes.size(); i++) {
-//                if (Debug) {
-//                    Log.d(TAG, " : " + i + "  "
-//                            + mSupportedPreviewSizes.get(i).width + "  "
-//                            + mSupportedPreviewSizes.get(i).height);
-//                }
-//            }
-
-            //parameters.setPreviewSize(1280, 720);
-            //parameters.setPictureSize(1280, 720);
         }
 
         // 开始拍照时调用该方法
@@ -108,6 +87,38 @@ public class MainActivity extends Activity {
                 mCamera = Camera.open(); // 打开摄像头
                 mCamera.setPreviewDisplay(holder); // 设置用于显示拍照影像的SurfaceHolder对象
                 mCamera.setDisplayOrientation(getPreviewDegree(MainActivity.this));
+
+                Camera.Parameters parameters = null;
+                parameters = mCamera.getParameters(); // 获取各项参数
+
+                if (Debug) {
+                    List<Camera.Size> mSupportedPreviewSizes;
+                    mSupportedPreviewSizes = parameters.getSupportedPreviewSizes();
+                    Log.d(TAG, "supported preview size : ");
+                    for (int i = 0; i < mSupportedPreviewSizes.size(); i++) {
+                        Log.d(TAG, " : " + i + "  "
+                                + mSupportedPreviewSizes.get(i).width + "  "
+                                + mSupportedPreviewSizes.get(i).height);
+                    }
+                    List<Camera.Size> mSupportedPictureSizes;
+                    mSupportedPictureSizes = parameters.getSupportedPictureSizes();
+                    Log.d(TAG, "supported picture size : ");
+                    for (int i = 0; i < mSupportedPictureSizes.size(); i++) {
+                        Log.d(TAG, " : " + i + "  "
+                                + mSupportedPictureSizes.get(i).width + "  "
+                                + mSupportedPictureSizes.get(i).height);
+                    }
+                }
+
+                parameters.setPictureFormat(PixelFormat.JPEG); // 设置图片格式
+                parameters.setPreviewSize(width, height); // 设置预览大小
+//            parameters.setPreviewFrameRate(5);  //设置每秒显示4帧,华为mate9会闪退
+                parameters.setPictureSize(width, height); // 设置保存的图片尺寸
+                parameters.setJpegQuality(100); // 设置照片质量
+                parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);    //设置自动连续对焦，API14
+                parameters.setRotation(90); //设置相机旋转
+                mCamera.setParameters(parameters);
+
                 mCamera.startPreview(); // 开始预览
             } catch (Exception e) {
                 e.printStackTrace();
@@ -210,6 +221,7 @@ public class MainActivity extends Activity {
 
     /**
      * 将拍下来的照片存放在SD卡中
+     *
      * @param data
      * @throws IOException
      */
